@@ -4,7 +4,7 @@ Lately, AWS announced a new policy language, Cedar. By its announcement, AWS sho
 
 TBD comparison of imperative and delerative.
 
-There are many benefits you can get from separating policy from application code, but the main one is the ability to build authorization that scale. Imperative style policy means that all permissions changes require an application code change, meaning more bugs, more time to react, and less secured access control. Not only that, when you want to enforce the same policy across applications, you must repeat yourself and verify somehow that all applications are in sync.
+Separating policy from application code offers numerous advantages, with the primary one being the ability to develop scalable authorization. By employing declarative policy, permissions can be modified without the need for changes in the application code. This results in fewer bugs, quicker response times, and enhanced access control security. Furthermore, when implementing the same policy across multiple applications, the need to duplicate efforts and ensure synchronization becomes unnecessary.
 
 In this article, we will use two open-source projects, Cedar and OPAL, to build a scalable authorization system. We will create a comprehensive solution that will let you write the policies, connect the decision engines to your data sources and keep it all up to date with all the policy configuration changes. By the end of this article, you'll have the full knowledge of building a complete authorization system - in open source - that is built to scale.
 
@@ -14,7 +14,7 @@ In this article, we will use two open-source projects, Cedar and OPAL, to build 
 ## The Building Blocks of Modern Authorization System
 Before we start to dirt our hands with code, let's take a zoom out to understand the building blocks of a modern application authorization system. By understanding the responsibility of each block, we will be able to separate the concern of each component. Making sure that we can scale our authorization system by its need without the fear of breaking it.
 
-The modern authorization system concrete (TBD better word) of 5 components, Enforcement, Decision, Retrieval, Information, and Administration. Looking at the diagram below we can see that:
+The modern authorization system consists of 5 components, Enforcement, Decision, Retrieval, Information, and Administration. Looking at the diagram below we can see that:
 
 1. Admin configures the policy at the Retrieval point.
 2. Developer configures data sources in the Information point.
@@ -34,10 +34,36 @@ git clone TBD
 
 Taking a look at the repo we just clone, we can see two parts of our retrieval point. First, is a folder named Policy that represents our policy storage. Second, is the docker-compose file on our root folder that contains the configuration that creates a local git server that will serve our policy files. We used a local git server to avoid a redundant mess with SSH keys for real repositories. In the real world, you will probably use a remote git server like GitHub or GitLab.
 
-Let's take a look at the file named blog in our policy folder. As you can see we configured a simple permissions model for a blog application.
+Let's take a look at the folder named `policy` in our repository. As you can see there are 3 simple policy files, each consists policy permit statement for different roles of users.
 
+admin.cedar
 ```
-TBD
+// Admins can perform any action on any resource
+permit(
+    principal in Role::"admin",
+    action,
+    resource
+);
+```
+
+writer.cedar
+```
+// Writers can perform post and put on artciles
+permit(
+    principal in Role::"writer",
+    action in [Action::"post", Action::"put"],
+    resource in ResourceType::"article"
+);
+```
+
+user.cedar
+```
+// All users can read all resources
+permit(
+    principal,
+    action in Action::"get",
+    resource
+);
 ```
 
 As we have done for the policy configuration, we can also configure the data sources for our application.

@@ -1,0 +1,105 @@
+[
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "admin",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "admin@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "writer",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "writer@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "user",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "user@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "article",
+            "type": "ResourceType"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "put",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "get",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "delete",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "post",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "article",
+            "type": "ResourceType"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "admin",
+            "type": "Role"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "writer",
+            "type": "Role"
+        }
+    }
+]

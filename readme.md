@@ -24,7 +24,7 @@ The modern authorization system consists of 5 components, Enforcement, Decision,
 4. Decision point deployed with the application to answer permissions decisions.
 5. The application includes Enforcement points that allow or not allow users to perform operations.
 
-TBD add diagram
+![](arch_diagram.png)
 
 Let's dive into each of the points, and see how should we separate their concern and build them to scale.
 
@@ -327,7 +327,65 @@ curl -X POST "http://localhost:8180/v1/is_authorized" \
 Since we configured a blog permissions mode, we also created a mock blog server, written in Node.js. Let's take a look at the file named server.js.
 
 ```
-TBD
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+
+// Generic authorization middleware - Enforcement Point
+const authorization = async (req, res, next) => {
+    const { user } = req.headers;
+    const { method, originalUrl, body } = req;
+
+    // Call the authorization service (Decision Point)
+    const response = await fetch('http://host.docker.internal:8180/v1/is_authorized', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        // The body of the request is the authorization request
+        body: JSON.stringify({
+            "principal": `User::\"${user}\"`,
+            "action": `Action::\"${method.toLowerCase()}\"`,
+            "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`,
+            "context": body
+        })
+    });
+
+    const { decision } = await response.json();
+
+    // If the decision is not 'Allow', return a 403
+    if (decision !== 'Allow') {
+        res.status(403).send('Access Denied');
+        return;
+    }
+    next();
+};
+
+// Mock routes
+app.get('/article', authorization, async (req, res) => {
+    const articles = ['article1', 'article2', 'article3'];
+    res.send(articles);
+});
+
+app.post('/article/:id', authorization, async (req, res) => {
+    res.send('Article created');
+});
+
+app.put('/article/:id', authorization, async (req, res) => {
+    res.send('Article updated');
+});
+
+app.delete('/article/:id', authorization, async (req, res) => {
+    res.send('Article deleted');
+});
+
+// Start the server
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});
 ```
 
 To run this server, in another terminal window, run the following command to spin up our server.
@@ -363,7 +421,71 @@ Now, that we are done with spin up our authorizaiton system, let's test the diff
 First, since we separated our policy configuration from our application, we can transparently add enforcement points in any other application we want. For example, here is a simple Python application that enforces the same permissions model we created earlier.
 
 ```
-TBD
+from functools import wraps
+
+import requests
+import os
+from flask import Flask, request
+
+app = Flask(__name__)
+app.config['JSON_SORT_KEYS'] = False
+
+# Authroization decorator middleware
+def authorization(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = request.headers.get('user')
+        method = request.method
+        original_url = request.path
+
+        # Call authorization service
+        # In the request body, we pass the relevant request information
+        response = requests.post('http://host.docker.internal:8180/v1/is_authorized', json={
+            "principal": f"User::\"{user}\"",
+            "action": f"Action::\"{method.lower()}\"",
+            "resource": f"ResourceType::\"{original_url.split('/')[1]}\"",
+            "context": request.json
+        }, headers={
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        })
+
+        decision = response.json().get('decision')
+
+        # If the decision is not Allow, we return a 403
+        if decision != 'Allow':
+            return 'Access Denied', 403
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+
+# Mock endpoints
+@app.route('/article')
+@authorization
+def get_articles():
+    articles = ['article1', 'article2', 'article3']
+    return {'articles': articles}
+
+@app.route('/article/<id>', methods=['POST'])
+@authorization
+def create_article(id):
+    return 'Article created'
+
+@app.route('/article/<id>', methods=['PUT'])
+@authorization
+def update_article(id):
+    return 'Article updated'
+
+@app.route('/article/<id>', methods=['DELETE'])
+@authorization
+def delete_article(id):
+    return 'Article deleted'
+
+# Run the app
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 3001))
+    app.run(port=port, debug=True, host='0.0.0.0')
 ```
 
 As you can see, no more imperative code is required to enforce the permissions, and streamline them on all our applications.

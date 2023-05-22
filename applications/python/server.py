@@ -7,6 +7,7 @@ from flask import Flask, request
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
+# Authroization decorator middleware
 def authorization(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -14,6 +15,8 @@ def authorization(f):
         method = request.method
         original_url = request.path
 
+        # Call authorization service
+        # In the request body, we pass the relevant request information
         response = requests.post('http://host.docker.internal:8180/v1/is_authorized', json={
             "principal": f"User::\"{user}\"",
             "action": f"Action::\"{method.lower()}\"",
@@ -26,6 +29,7 @@ def authorization(f):
 
         decision = response.json().get('decision')
 
+        # If the decision is not Allow, we return a 403
         if decision != 'Allow':
             return 'Access Denied', 403
         
@@ -33,6 +37,7 @@ def authorization(f):
     
     return decorated
 
+# Mock endpoints
 @app.route('/article')
 @authorization
 def get_articles():
@@ -54,6 +59,7 @@ def update_article(id):
 def delete_article(id):
     return 'Article deleted'
 
+# Run the app
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
     app.run(port=port, debug=True, host='0.0.0.0')

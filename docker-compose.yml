@@ -2,16 +2,16 @@ version: "3.8"
 services:
   # A simple nginx server to serve our mock data sources.
   cedar_data_nginx:
-      image: nginx:latest
-      volumes:
-        - "./data:/usr/share/nginx/html:ro"
+    image: nginx:latest
+    volumes:
+      - "./data:/usr/share/nginx/html:ro"
   # Local git repo to host our policy.
   cedar_retrieval_repository:
-      image: rockstorm/gitweb
-      ports:
-        - "80:80"
-      volumes:
-        - "../:/srv/git:ro"
+    image: rockstorm/gitweb
+    ports:
+      - "80:80"
+    volumes:
+      - "../:/srv/git:ro"
   # When scaling the opal-server to multiple nodes and/or multiple workers, we use
   # a *broadcast* channel to sync between all the instances of opal-server.
   # Under the hood, this channel is implemented by encode/broadcaster (see link below).
@@ -45,7 +45,7 @@ services:
       # configures from where the opal client should initially fetch data (when it first goes up, after disconnection, etc).
       # the data sources represents from where the opal clients should get a "complete picture" of the data they need.
       # after the initial sources are fetched, the client will subscribe only to update notifications sent by the server.
-      - OPAL_DATA_CONFIG_SOURCES={"config":{"entries":[{"url":"http://cedar_data_nginx/data.json","topics":["policy_data"],"dst_path":""}]}}
+      - OPAL_DATA_CONFIG_SOURCES={"config":{"entries":[{"url":"http://cedar_data_nginx/data.json","topics":["policy_data"],"dst_path":""},{"url":"http://cedar_data_nginx/users.json","topics":["users_data"],"dst_path":""}]}}
       - OPAL_LOG_FORMAT_INCLUDE_PID=true
 
       # By default, the OPAL server looks for OPA rego files. Configure it to look for cedar files.

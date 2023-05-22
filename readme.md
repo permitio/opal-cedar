@@ -213,7 +213,8 @@ As you can read in the policy, we added new permission that allow users to auto-
 ### Scale Data Sources
 Adding a policy is fine, but how would we know that a user exists for more than 30 days? For that, we may want to use external data sources that will tell us more about the user. Do it in imperative style, we would need to change the code in all our applications to add this new data source. In our case, we just need to add a new data source in our policy administration layer.
 
-Let's mock a new service that will tell us how long the user exists.
+In the data folder, we already created `users.json` file that includes the user details. Let's take a look at the file.
+As you can see, we have now data for the karma of each of our writers
 
 ```
 TBD

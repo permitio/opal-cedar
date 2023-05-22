@@ -13,9 +13,18 @@
         }
     },
     {
-        "attrs": {
-            "karma": 2000
-        },
+        "parents": [
+            {
+                "id": "writer",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "senior_writer@blog.app",
+            "type": "User"
+        }
+    },
+    {
         "parents": [
             {
                 "id": "writer",

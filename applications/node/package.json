@@ -1,0 +1,13 @@
+{
+    "name": "opal-cedar-express",
+    "version": "0.0.1",
+    "description": "A simple express app uses cedar and OPAl for authorization",
+    "main": "server.js",
+    "scripts": {
+        "start": "nodemon server.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "body-parser": "^1.20.2"
+    }
+}

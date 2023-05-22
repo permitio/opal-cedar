@@ -70,9 +70,9 @@ As we have done for the policy configuration, we can also configure the data sou
 
 
 ## Data Resources and Information Point
-In the real world, the data sources for our application will be a database, identity management, or any other data source that will tell us more about the users and the data we're handling. For the purpose of the demo, we created a hard-coded JSON file that mocks our data source, and the roles of our users.
+In the real world, the data sources for our application will be a database, identity management, or any other data source that will tell us more about the users and the data we're handling. For the purpose of the demo, we created a hard-coded JSON file that mocks our main app data source, including the resources, roles, and basic user details.
 
-Let's take a look at the file named users.json in our data folder.
+Let's take a look at the file named `data.json` in our data folder.
 
 ```
 TBD
@@ -109,7 +109,7 @@ Let's wait until OPAL finishes to set up everything and then we can start to use
 
 
 ## Use the Decision Point
-One of the benefits of using administration points is the ability to auto-scale our decision points and manage them by OPAL client. If we look at the logs of the compose we ran, we can see that our cedar-agent is running on port 7766. We now have the option to call the decision APIs via REST and enforce the permissions in our application.
+One of the benefits of using administration points is the ability to auto-scale our decision points and manage them by OPAL client. If we look at the logs of the compose we ran, we can see that our cedar-agent is running on port 8180. We now have the option to call the decision APIs via REST and enforce the permissions in our application.
 
 We can verify that our cedar-agent is up and running by calling the `is_authorized` endpoint with the following request.
 

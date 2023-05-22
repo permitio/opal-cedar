@@ -1,6 +1,6 @@
 // Writers can perform post and put on artciles
 permit(
-    principal,
+    principal in Role::"writer",
     action in [Action::"post", Action::"put"],
     resource in ResourceType::"article"
-) when (principal in Role::"writer");
+) when { resource has published  && resource.published == false };

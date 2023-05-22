@@ -16,7 +16,8 @@ const authorization = async (req, res, next) => {
         body: JSON.stringify({
             "principal": `User::\"${user}\"`,
             "action": `Action::\"${method.toLowerCase()}\"`,
-            "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`
+            "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`,
+            "context": body
         })
     });
     const { decision } = await response.json();

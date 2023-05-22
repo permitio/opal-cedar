@@ -17,10 +17,21 @@ const authorization = async (req, res, next) => {
             "principal": `User::\"${user}\"`,
             "action": `Action::\"${method.toLowerCase()}\"`,
             "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`,
-            "context": body
+            "context": {
+                "uid": {
+                    "__entity": {
+                        "type": originalUrl.split('/')[1],
+                        "id": "common_knowledge"
+                    },
+                },
+                "attrs": body
+            }
         })
     });
-    const { decision } = await response.json();
+
+    const json = await response.json();
+    console.log(json);
+    const { decision } = json;
     if (decision !== 'Allow') {
         res.status(403).send('Access Denied');
         return;

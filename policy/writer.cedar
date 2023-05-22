@@ -3,4 +3,4 @@ permit(
     principal in Role::"writer",
     action in [Action::"post", Action::"put"],
     resource in ResourceType::"article"
-) when { resource has published  && resource.published == false };
+) when { context has published  && context.published == false };

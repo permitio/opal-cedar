@@ -17,7 +17,8 @@ def authorization(f):
         response = requests.post('http://host.docker.internal:8180/v1/is_authorized', json={
             "principal": f"User::\"{user}\"",
             "action": f"Action::\"{method.lower()}\"",
-            "resource": f"ResourceType::\"{original_url.split('/')[1]}\""
+            "resource": f"ResourceType::\"{original_url.split('/')[1]}\"",
+            "context": request.json
         }, headers={
             'Content-Type': 'application/json',
             'Accept': 'application/json'

@@ -195,12 +195,17 @@ curl -X POST http://localhost:3001/article/2 --header "user: user@blog.app"
 ```
 
 ### Scale Permissions Model
-A new feature request came, we want to allow users to auto-publish their posts only if their account exists for more than 30 days. In the imperative style permissions model, we would need to change the code in all our applications to add this new permission. In our case, we just need to change the policy file in our policy repository.
+A new feature request came, we want to allow writers to auto-publish their posts only if their account exceed 1000 karma points. In the imperative style permissions model, we would need to change the code in all our applications to add this new permission. In our case, we just need to edit the policy file in our policy repository.
 
-Let's create a new file named `writer_auto_publish.cedar` policy file in our policy repository (if you cloned the repo, just add the suffix `.cedar` to the file in the folder).
+In our `writer.cedar` file, let's add the following permission.
+This permissions, will allow writers to post `published: true` articles only if their account has more than 1000 karma points.
 
 ```
-TBD
+permit(
+    principal in Role::"writer",
+    action in [Action::"post", Action::"put"],
+    resource in ResourceType::"article"
+) when { principal.karma > 1000 || (context has published  && context.published == false) }
 ```
 
 As you can read in the policy, we added new permission that allow users to auto-publish their posts only if their account exists for more than 30 days. It is not only we can deliver our policy code without any application change, the declaration is much more readable and easy to understand.

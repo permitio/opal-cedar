@@ -3,4 +3,4 @@ permit(
     principal in Role::"writer",
     action in [Action::"post", Action::"put"],
     resource in ResourceType::"article"
-) when { principal.karma > 3000 || (context has published  && context.published == false) };
+) when { principal.karma > 1000 || (context has published  && context.published == false) };

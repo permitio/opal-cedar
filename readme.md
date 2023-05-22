@@ -1,6 +1,8 @@
 # Authorization at Scale with Cedar and OPAL
 ## Why Authorization Should be Scale?
-Lately, AWS announced a new policy language, Cedar. By its announcement, AWS shows an exciting proof that application-level authorization needs a refactor. Instead of using imperative code that defines policy in the application code, we should move to a declarative model, decentralized and separated from the application code.
+Recently, AWS unveiled Cedar, a new policy language.
+Through this announcement, AWS provides compelling evidence that a reorganization is required for application-level authorization.
+Rather than relying on imperative code within the application codebase to define policies, there is a need to transition towards a decentralized and declarative model, separate from the application code.
 
 TBD comparison of imperative and delerative.
 
@@ -22,6 +24,8 @@ The modern authorization system consists of 5 components, Enforcement, Decision,
 4. Decision point deployed with the application to answer permissions decisions.
 5. The application includes Enforcement points that allow or not allow users to perform operations.
 
+TBD add diagram
+
 Let's dive into each of the points, and see how should we separate their concern and build them to scale.
 
 
@@ -30,7 +34,9 @@ To set up our retrieval point, we will use a Git repository. Of course, you can 
 
 For the purpose of the demo, we already created a repository that includes the whole configuration required for a complete authorization system. Let's start by cloning it to our local machine.
 
-git clone TBD
+```
+git clone git@github.com:permitio/opal-cedar.git
+```
 
 Taking a look at the repo we just clone, we can see two parts of our retrieval point. First, is a folder named Policy that represents our policy storage. Second, is the docker-compose file on our root folder that contains the configuration that creates a local git server that will serve our policy files. We used a local git server to avoid a redundant mess with SSH keys for real repositories. In the real world, you will probably use a remote git server like GitHub or GitLab.
 
@@ -77,7 +83,124 @@ As you can find here, we represents our Roles, Resources, Actions, and Users, in
 This format is the Cedar entity format, in a real app, we will use our DB to attribute our app data to the Cedar entities.
 
 ```
-TBD
+[
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "admin",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "admin@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "writer",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "senior_writer@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "writer",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "writer@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [
+            {
+                "id": "user",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "user@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "article",
+            "type": "ResourceType"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "put",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "get",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "delete",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "post",
+            "type": "Action"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "article",
+            "type": "ResourceType"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "admin",
+            "type": "Role"
+        }
+    },
+    {
+        "attrs": {},
+        "parents": [],
+        "uid": {
+            "id": "writer",
+            "type": "Role"
+        }
+    }
+]
 ```
 
 By using this data, we can get decisions in the policy like allow if user is writer or deny if user is reader.
@@ -92,13 +215,84 @@ OPAL is configured as code and you can use any kind of IaC (such as Helm, TF, or
 Let's take a look at the first services declared in the docker-compose file, where we compose the retrieval and information point. This is not a part of OPAL yet, just a way to set up everything needed to run OPAL in our demo
 
 ```
-TBD
+version: "3.8"
+services:
+  # A simple nginx server to serve our mock data sources.
+  cedar_data_nginx:
+      image: nginx:latest
+      volumes:
+        - "./data:/usr/share/nginx/html:ro"
+  # Local git repo to host our policy.
+  cedar_retrieval_repository:
+      image: rockstorm/gitweb
+      ports:
+        - "80:80"
+      volumes:
+        - "../:/srv/git:ro"
 ```
 
 The second part is OPAL itself, as you can see in the configuration, we point the OPAL server to track changes in our policy repository, the agent to be Cedar, and the data sources to be the server that serves the JSON file we created earlier.
 
 ```
-TBD
+  broadcast_channel:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  opal_server:
+    # by default we run opal-server from latest official image
+    image: permitio/opal-server:latest
+    environment:
+      # the broadcast backbone uri used by opal server workers (see comments above for: broadcast_channel)
+      - OPAL_BROADCAST_URI=postgres://postgres:postgres@broadcast_channel:5432/postgres
+      # number of uvicorn workers to run inside the opal-server container
+      - UVICORN_NUM_WORKERS=4
+      # the git repo hosting our policy
+      # - if this repo is not public, you can pass an ssh key via `OPAL_POLICY_REPO_SSH_KEY`)
+      # - the repo we pass in this example is *public* and acts as an example repo with dummy rego policy
+      # - for more info, see: https://docs.opal.ac/tutorials/track_a_git_repo
+      - OPAL_POLICY_REPO_URL=http://cedar_retrieval_repository/opal-cedar/.git
+      - OPAL_POLICY_REPO_MAIN_BRANCH=main
+      # in this example we will use a polling interval of 30 seconds to check for new policy updates (git commits affecting the rego policy).
+      # however, it is better to utilize a git *webhook* to trigger the server to check for changes only when the repo has new commits.
+      # for more info see: https://docs.opal.ac/tutorials/track_a_git_repo
+      - OPAL_POLICY_REPO_POLLING_INTERVAL=30
+      # configures from where the opal client should initially fetch data (when it first goes up, after disconnection, etc).
+      # the data sources represents from where the opal clients should get a "complete picture" of the data they need.
+      # after the initial sources are fetched, the client will subscribe only to update notifications sent by the server.
+      - OPAL_DATA_CONFIG_SOURCES={"config":{"entries":[{"url":"http://cedar_data_nginx/data.json","topics":["policy_data"],"dst_path":""},{"url":"http://cedar_data_nginx/data.json","topics":["policy_data"],"dst_path":""}]}}
+      - OPAL_LOG_FORMAT_INCLUDE_PID=true
+
+      # By default, the OPAL server looks for OPA rego files. Configure it to look for cedar files.
+      - OPAL_FILTER_FILE_EXTENSIONS=.cedar
+      - OPAL_POLICY_REPO_POLICY_EXTENSIONS=.cedar
+    ports:
+      # exposes opal server on the host machine, you can access the server at: http://localhost:7002
+      - "7002:7002"
+    depends_on:
+      - broadcast_channel
+  opal_client:
+    # by default we run opal-client from latest official image
+    image: permitio/opal-client-cedar:latest
+    environment:
+      - OPAL_SERVER_URL=http://opal_server:7002
+      - OPAL_LOG_FORMAT_INCLUDE_PID=true
+    ports:
+      # exposes opal client on the host machine, you can access the client at: http://localhost:7000
+      - "7766:7000"
+      # you can access the Cedar agent APIs
+      - "8180:8180"
+    depends_on:
+      - opal_server
+    # this command is not necessary when deploying OPAL for real, it is simply a trick for dev environments
+    # to make sure that opal-server is already up before starting the client.
+    command: sh -c "exec ./wait-for.sh opal_server:7002 --timeout=20 -- ./start.sh"
+    links:
+      - cedar_data_nginx
+
+volumes:
+  opa_backup:
 ```  
 
 Let's run this configuration to spin up our authorization system.
@@ -146,12 +340,16 @@ We can now use CURL or Postman to verify our permissions model. Let's run the fo
 
 #### Allowed Request
 ```
-curl -X POST http://localhost:3000/article/2 --header "user: writer@blog.app"
+curl -X POST http://localhost:3000/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: writer@blog.app" \
 ```
 
 #### Denied Request
 ```
-curl -X POST http://localhost:3000/article/2 --header "user: user@blog.app"
+curl -X POST http://localhost:3000/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: user@blog.app" \
 ```
 
 You can also verify and audit the decisions made by the decision point by looking at the logs of the cedar-agent.
@@ -186,12 +384,16 @@ Now, let's do the same CURL test we did earlier, but from the new application.
 
 #### Allowed Request
 ```
-curl -X POST http://localhost:3001/article/2 --header "user: writer@blog.app"
+curl -X POST http://localhost:3001/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: writer@blog.app" \
 ```
 
 #### Denied Request
 ```
-curl -X POST http://localhost:3001/article/2 --header "user: user@blog.app"
+curl -X POST http://localhost:3001/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: user@blog.app" \
 ```
 
 ### Scale Permissions Model
@@ -211,17 +413,75 @@ permit(
 As you can read in the policy, we added new permission that allow users to auto-publish their posts only if their account exists for more than 30 days. It is not only we can deliver our policy code without any application change, the declaration is much more readable and easy to understand.
 
 ### Scale Data Sources
-Adding a policy is fine, but how would we know that a user exists for more than 30 days? For that, we may want to use external data sources that will tell us more about the user. Do it in imperative style, we would need to change the code in all our applications to add this new data source. In our case, we just need to add a new data source in our policy administration layer.
+Adding a policy is fine, but how would we know what is our writer karma?
+For that, we may want to use external data sources that will tell us more about the user.
+Do it in imperative style, we would need to change the code in all our applications to add this new data source.
+In our case, we just need to add a new data source in our policy administration layer.
 
 To save some time and reinitalization, we will just add the karma data in our main data source.
 In real world, tho, we could use a different data source for each data type.
 
+Let's add the karma data to our `data.json` file.
 ```
-TBD
+...
+    {
+        "attrs": {
+            "karma": 2000
+        },
+        "parents": [
+            {
+                "id": "writer",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "senior_writer@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {
+            "karma": 500
+        },
+        "parents": [
+            {
+                "id": "writer",
+                "type": "Role"
+            }
+        ],
+        "uid": {
+            "id": "writer@blog.app",
+            "type": "User"
+        }
+    },
+...
 ```
 
-Let's run the following CURL to see our new permission in action.
+Let's run now the following CURL to see our new permission in action.
 
+#### Allowed request
+```
+curl -X POST http://localhost:3001/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: senior_writer@blog.app" \
+    -d '{"published": true}'
+```
+
+#### Denied request
+```
+curl -X POST http://localhost:3001/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: writer@blog.app" \
+    -d '{"published": true}'
+```
+
+#### Allowed request with unpublished article
+```
+curl -X POST http://localhost:3001/article/2 \
+    -H 'Content-Type: application/json' \
+    -H "user: writer@blog.app" \
+    -d '{"published": false}'
+```
 
 ### Scale Decision Points
 In this tutorial, we just use a local demonstration of OPAL running on local machine with `docker-compose` file, run all the components in the same machine.

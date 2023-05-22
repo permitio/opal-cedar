@@ -73,6 +73,8 @@ As we have done for the policy configuration, we can also configure the data sou
 In the real world, the data sources for our application will be a database, identity management, or any other data source that will tell us more about the users and the data we're handling. For the purpose of the demo, we created a hard-coded JSON file that mocks our main app data source, including the resources, roles, and basic user details.
 
 Let's take a look at the file named `data.json` in our data folder.
+As you can find here, we represents our Roles, Resources, Actions, and Users, in hierarchical JSON format.
+This format is the Cedar entity format, in a real app, we will use our DB to attribute our app data to the Cedar entities.
 
 ```
 TBD
@@ -111,10 +113,20 @@ Let's wait until OPAL finishes to set up everything and then we can start to use
 ## Use the Decision Point
 One of the benefits of using administration points is the ability to auto-scale our decision points and manage them by OPAL client. If we look at the logs of the compose we ran, we can see that our cedar-agent is running on port 8180. We now have the option to call the decision APIs via REST and enforce the permissions in our application.
 
-We can verify that our cedar-agent is up and running by calling the `is_authorized` endpoint with the following request.
+We can verify that our cedar-agent is up and running, returning the right decisions, by calling the `is_authorized` endpoint with the following requests.
 
 ```
-TBD
+curl -X POST "http://localhost:8180/v1/is_authorized" \
+ -H "Accept: application/json" \
+ -H "Content-Type: application/json" \
+ -d '{"principal":"User::\"writer@blog.app\"","action":"Action::\"delete\"","resource":"Resource::\"article\""}' 
+```
+
+```
+curl -X POST "http://localhost:8180/v1/is_authorized" \
+ -H "Accept: application/json" \
+ -H "Content-Type: application/json" \
+ -d '{"principal":"User::\"writer@blog.app\"","action":"Action::\"post\"","resource":"Resource::\"article\""}' 
 ```
 
 ## Enforce Permissions
@@ -127,14 +139,19 @@ TBD
 To run this server, in another terminal window, run the following command to spin up our server.
 
 ```
-docker build -t blog-server .
-docker run -p 3000:3000 blog-server
+docker-compose -f applications/node/docker-compose.yml up
 ```
 
 We can now use CURL or Postman to verify our permissions model. Let's run the following two calls to see our authorization magic in action.
 
+#### Allowed Request
 ```
-TBD
+curl -X POST http://localhost:3000/article/2 --header "user: writer@blog.app"
+```
+
+#### Denied Request
+```
+curl -X POST http://localhost:3000/article/2 --header "user: user@blog.app"
 ```
 
 You can also verify and audit the decisions made by the decision point by looking at the logs of the cedar-agent.
@@ -162,20 +179,25 @@ As you can see, no more imperative code is required to enforce the permissions, 
 Let's run the application to see it in action.
 
 ```
-docker build -t blog-client .
-docker run -p 5000:5000 blog-client
+docker-compose -f applications/python/docker-compose.yml up
 ```
 
 Now, let's do the same CURL test we did earlier, but from the new application.
 
+#### Allowed Request
 ```
-TBD
+curl -X POST http://localhost:3001/article/2 --header "user: writer@blog.app"
+```
+
+#### Denied Request
+```
+curl -X POST http://localhost:3001/article/2 --header "user: user@blog.app"
 ```
 
 ### Scale Permissions Model
 A new feature request came, we want to allow users to auto-publish their posts only if their account exists for more than 30 days. In the imperative style permissions model, we would need to change the code in all our applications to add this new permission. In our case, we just need to change the policy file in our policy repository.
 
-Let's add the following policy file to our policy repository.
+Let's create a new file named `writer_auto_publish.cedar` policy file in our policy repository (if you cloned the repo, just add the suffix `.cedar` to the file in the folder).
 
 ```
 TBD
@@ -202,7 +224,10 @@ Let's run the following CURL to see our new permission in action.
 
 
 ### Scale Decision Points
-TBD
+In this tutorial, we just use a local demonstration of OPAL running on local machine with `docker-compose` file, run all the components in the same machine.
+In production, tho, you can use OPAL to scale your decision points as you need.
+As we saw earlier, OPAL seperate the concern of the stateful servers, and stateless clients that running as sidecars in individual applications.
+In OPAL repository, you can find helm charts and other instructions that will help you to deploy OPAL in production and scale it as your deployment needs.
 
 ## Conclusion
 We just created a basic auto-scaled authorization system that can be used to enforce permissions in any application we want. We separated the control plane from the data plane and the enforcement plane. We also separated the policy configuration from the application code. We can now scale our system in any aspect we want, without changing the application code.

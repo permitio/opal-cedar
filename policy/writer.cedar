@@ -3,4 +3,4 @@ permit(
     principal in Role::"writer",
     action in [Action::"post", Action::"put"],
     resource in ResourceType::"article"
-);
+) when (resource.published == false);

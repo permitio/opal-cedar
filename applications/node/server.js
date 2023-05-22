@@ -6,7 +6,7 @@ app.use(bodyParser.json());
 
 const authorization = async (req, res, next) => {
     const { user } = req.headers;
-    const { method, originalUrl } = req;
+    const { method, originalUrl, body } = req;
     const response = await fetch('http://host.docker.internal:8180/v1/is_authorized', {
         method: 'POST',
         headers: {
@@ -16,11 +16,12 @@ const authorization = async (req, res, next) => {
         body: JSON.stringify({
             "principal": `User::\"${user}\"`,
             "action": `Action::\"${method.toLowerCase()}\"`,
-            "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`
+            "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`,
+            "context": body
         })
     });
     const { decision } = await response.json();
-    if (decision === 'Deny') {
+    if (decision !== 'Allow') {
         res.status(403).send('Access Denied');
         return;
     }

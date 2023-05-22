@@ -13,6 +13,7 @@
         }
     },
     {
+        "attrs": {},
         "parents": [
             {
                 "id": "writer",
@@ -25,6 +26,7 @@
         }
     },
     {
+        "attrs": {},
         "parents": [
             {
                 "id": "writer",

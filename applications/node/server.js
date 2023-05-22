@@ -17,15 +17,7 @@ const authorization = async (req, res, next) => {
             "principal": `User::\"${user}\"`,
             "action": `Action::\"${method.toLowerCase()}\"`,
             "resource": `ResourceType::\"${originalUrl.split('/')[1]}\"`,
-            "context": {
-                "uid": {
-                    "__entity": {
-                        "type": originalUrl.split('/')[1],
-                        "id": "common_knowledge"
-                    },
-                },
-                "attrs": body
-            }
+            "context": body
         })
     });
 

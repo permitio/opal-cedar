@@ -13,7 +13,9 @@
         }
     },
     {
-        "attrs": {},
+        "attrs": {
+            "karma": 2000
+        },
         "parents": [
             {
                 "id": "writer",

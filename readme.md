@@ -352,12 +352,6 @@ curl -X POST http://localhost:3000/article/2 \
     -H "user: user@blog.app" \
 ```
 
-You can also verify and audit the decisions made by the decision point by looking at the logs of the cedar-agent.
-
-```
-TBD
-```
-
 At this point, we have all our components up and running. As you saw, we separate all the components and verify that each of them is doing only one thing. Enforcement point, just enforce the permissions, decision point, just answer the permissions questions, and administration point, just connect the policy and data sources to the decision point. In the control plane, we just have policy and data source declarations.
 
 

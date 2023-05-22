@@ -1,0 +1,22 @@
+[
+    {
+        "attrs": {
+            "karma": 2000
+        },
+        "parents": [],
+        "uid": {
+            "id": "senior_writer@blog.app",
+            "type": "User"
+        }
+    },
+    {
+        "attrs": {
+            "karma": 500
+        },
+        "parents": [],
+        "uid": {
+            "id": "writer@blog.app",
+            "type": "User"
+        }
+    }
+]
